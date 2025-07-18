@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI INTERVIEW PROCTORING - Login</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-wrapper {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            width: 300px;
+            padding: 40px 30px;
+            color: white;
+            text-align: center;
+        }
+
+        .login-wrapper h2 {
+            margin-bottom: 30px;
+            font-weight: 500;
+            font-size: 28px;
+        }
+
+        #loginBtn {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #loginBtn:disabled {
+            background-color: #7fb3d5;
+            cursor: not-allowed;
+        }
+
+        #errorMsg {
+            margin-top: 15px;
+            color: #ff6b6b;
+            font-size: 14px;
+            min-height: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <h2>AI INTERVIEW PROCTORING</h2>
+        <button id="loginBtn" type="button">Login and Allow Camera & Microphone</button>
+        <div id="errorMsg"></div>
+    </div>
+
+    <script>
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMsg = document.getElementById('errorMsg');
+
+        loginBtn.addEventListener('click', () => {
+            errorMsg.textContent = '';
+            loginBtn.disabled = true;
+
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    stream.getTracks().forEach(track => track.stop());
+                    window.location.href = 'next.html';
+                })
+                .catch(err => {
+                    errorMsg.textContent = 'Camera and microphone access is mandatory to proceed.';
+                    loginBtn.disabled = false;
+                });
+        });
+    </script>
+</body>
+</html>
