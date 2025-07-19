@@ -56,7 +56,13 @@
     <div class="content">
         <h1>Camera and Microphone Access</h1>
         <video id="video" autoplay playsinline></video>
+        <!-- AI text detection input and button removed for candidate privacy -->
         <div id="errorMsg" class="error-message"></div>
+        <div style="margin-top: 20px;">
+            <button id="switchToCandidateBrowser" style="background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px;">
+                Switch to Candidate Browser View
+            </button>
+        </div>
     </div>
 
     <script>
@@ -67,6 +73,10 @@
 
         const video = document.getElementById('video');
         const errorMsg = document.getElementById('errorMsg');
+        // const analyzeBtn = document.getElementById('analyzeBtn'); // Removed
+        // const resultsDiv = document.getElementById('results'); // Removed
+        // const aiTextInput = document.getElementById('aiTextInput'); // Removed
+        // const aiTextBtn = document.getElementById('aiTextBtn'); // Removed
 
         function startMedia() {
             navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -79,6 +89,163 @@
         }
 
         startMedia();
+
+        // Helper to capture a frame from the video
+        function captureFrame() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return new Promise(resolve => {
+                canvas.toBlob(resolve, 'image/jpeg');
+            });
+        }
+
+        async function sendToBackend(endpoint, fileBlob) {
+            const formData = new FormData();
+            formData.append('file', fileBlob, 'frame.jpg');
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/${endpoint}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                return await response.json();
+            } catch (err) {
+                return { error: err.message };
+            }
+        }
+
+        async function sendTextToBackend(text) {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/detect-ai-text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                return await response.json();
+            } catch (err) {
+                return { error: err.message };
+            }
+        }
+
+        // Remove aiTextInput and aiTextBtn references and event listener
+        // analyzeBtn.addEventListener('click', async () => { // Removed
+        //     errorMsg.textContent = '';
+        //     resultsDiv.innerHTML = 'Analyzing...';
+        //     const frameBlob = await captureFrame();
+        //     let results = '';
+        //     // Call all three endpoints
+        //     const [face, object, activity] = await Promise.all([
+        //         sendToBackend('detect-face', frameBlob),
+        //         sendToBackend('detect-object', frameBlob),
+        //         sendToBackend('detect-activity', frameBlob)
+        //     ]);
+        //     results += `<b>Face Detection:</b> ${JSON.stringify(face)}<br/>`;
+        //     results += `<b>Object Detection:</b> ${JSON.stringify(object)}<br/>`;
+        //     results += `<b>Activity Detection:</b> ${JSON.stringify(activity)}<br/>`;
+        //     resultsDiv.innerHTML = results;
+        // }); // Removed
+
+        // Automatically capture and send frames every 5 seconds
+        async function autoAnalyzeFrame() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(async (frameBlob) => {
+                    // Send to all three endpoints
+                    await Promise.all([
+                        sendToBackend('detect-face', frameBlob),
+                        sendToBackend('detect-object', frameBlob),
+                        sendToBackend('detect-activity', frameBlob)
+                    ]);
+                }, 'image/jpeg');
+            }
+            setTimeout(autoAnalyzeFrame, 5000); // 5 seconds
+        }
+        video.addEventListener('loadeddata', autoAnalyzeFrame);
+
+        // Automatically record and send audio every 10 seconds
+        let audioStream;
+        let mediaRecorder;
+        let audioChunks = [];
+        async function startAudioRecording() {
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(audioStream);
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    audioChunks = [];
+                    // Send audio to backend
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'audio.wav');
+                    await fetch('http://127.0.0.1:8000/detect-ai-audio', {
+                        method: 'POST',
+                        body: formData
+                    });
+                };
+                // Start the first recording
+                recordAudioClip();
+            } catch (err) {
+                // Optionally handle error
+            }
+        }
+        function recordAudioClip() {
+            if (!mediaRecorder) return;
+            mediaRecorder.start();
+            setTimeout(() => {
+                mediaRecorder.stop();
+                setTimeout(recordAudioClip, 10000); // Wait 10s, then record again
+            }, 5000); // Record 5s
+        }
+        startAudioRecording();
+
+        // Automatically send webcam frame to backend for interviewer live view
+        async function uploadFrame() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(async (frameBlob) => {
+                    const formData = new FormData();
+                    formData.append('file', frameBlob, 'frame.jpg');
+                    await fetch('http://127.0.0.1:8000/upload-frame', {
+                        method: 'POST',
+                        body: formData
+                    });
+                }, 'image/jpeg');
+            }
+            setTimeout(uploadFrame, 5000);
+        }
+        video.addEventListener('loadeddata', uploadFrame);
+
+        // Tab switch detection and reporting
+        // document.addEventListener('visibilitychange', function() {
+        //     const event = document.hidden ? 'tab_hidden' : 'tab_visible';
+        //     fetch('http://127.0.0.1:8000/tab-switch', {
+        //         method: 'POST',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({
+        //             userId: userId,
+        //             event: event
+        //         })
+        //     });
+        // });
+
+        // Switch to candidate browser view
+        document.getElementById('switchToCandidateBrowser').addEventListener('click', () => {
+            window.location.href = 'candidate_browser.html?userId=' + encodeURIComponent(userId);
+        });
     </script>
 </body>
 </html>

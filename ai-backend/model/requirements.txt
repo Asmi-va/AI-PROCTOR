@@ -1,0 +1,14 @@
+opencv-python
+dlib
+imutils
+scipy
+torch
+torchvision
+yolov5
+ultralytics
+webrtcvad
+sounddevice
+numpy
+pyAudioAnalysis 
+whisper 
+package-mode = false 

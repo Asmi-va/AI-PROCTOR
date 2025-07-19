@@ -75,7 +75,10 @@
         <div class="content">
             <h1>Welcome to the AI Interview Proctoring System</h1>
             <p>You have successfully logged in and granted camera and microphone access.</p>
-            <button id="nextBtn">Next</button>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button id="nextBtn">Standard View</button>
+                <button id="candidateBrowserBtn" style="background-color: #28a745;">Candidate Browser</button>
+            </div>
         </div>
 
         <script>
@@ -157,6 +160,11 @@
             nextBtn.addEventListener('click', () => {
                 // Pass userId as query param to next page if needed
                 window.location.href = 'camera.html?userId=' + encodeURIComponent(userId);
+            });
+
+            // Add event listener for candidate browser button
+            document.getElementById('candidateBrowserBtn').addEventListener('click', () => {
+                window.location.href = 'candidate_browser.html?userId=' + encodeURIComponent(userId);
             });
         </script>
         <script>

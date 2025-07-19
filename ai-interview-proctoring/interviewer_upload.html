@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI INTERVIEW PROCTORING - Interviewer Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ecc71;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .video-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .video-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .video-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .video-wrapper {
+            flex: 1;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .controls-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .control-group h3 {
+            color: white;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .control-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #2ecc71;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(26px);
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            color: #2ecc71;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .candidate-list {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .candidate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 12px;
+        }
+
+        .candidate-item:last-child {
+            border-bottom: none;
+        }
+
+        .candidate-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-indicator-small {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #2ecc71;
+        }
+
+        .status-indicator-small.offline {
+            background: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 80px);
+            }
+            
+            .controls-section {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI Interview Proctoring - Interviewer Upload</h1>
+        <div class="status-indicator">
+            <div class="status-dot"></div>
+            <span id="connectionStatus">Connecting...</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="video-section">
+            <div class="video-container">
+                <div class="video-title">Your Camera (Shared with Candidates)</div>
+                <div class="video-wrapper">
+                    <video id="interviewerVideo" autoplay playsinline muted></video>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="control-group">
+                <h3>Broadcast Controls</h3>
+                <div class="control-item">
+                    <span>Broadcasting</span>
+                    <div class="toggle-switch active" id="broadcastToggle"></div>
+                </div>
+                <div class="control-item">
+                    <span>Auto Upload</span>
+                    <div class="toggle-switch active" id="autoUploadToggle"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Connection Status</h3>
+                <div class="control-item">
+                    <span>Backend Status</span>
+                    <span id="backendStatus">Connecting...</span>
+                </div>
+                <div class="control-item">
+                    <span>Upload Frequency</span>
+                    <span id="uploadFrequency">2s</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Active Candidates</h3>
+                <div class="candidate-list" id="candidateList">
+                    <div class="candidate-item">
+                        <span>Loading candidates...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorMsg" class="error-message"></div>
+            <div id="successMsg" class="success-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Video elements
+        const interviewerVideo = document.getElementById('interviewerVideo');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+
+        // Control elements
+        const broadcastToggle = document.getElementById('broadcastToggle');
+        const autoUploadToggle = document.getElementById('autoUploadToggle');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const backendStatus = document.getElementById('backendStatus');
+        const uploadFrequency = document.getElementById('uploadFrequency');
+        const candidateList = document.getElementById('candidateList');
+
+        let interviewerStream = null;
+        let isBroadcasting = true;
+        let isAutoUploading = true;
+        let uploadInterval = null;
+        let liveUploadInterval = null;
+
+        // Initialize interviewer camera
+        async function initializeInterviewerCamera() {
+            try {
+                interviewerStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: false 
+                });
+                interviewerVideo.srcObject = interviewerStream;
+                connectionStatus.textContent = 'Connected';
+                backendStatus.textContent = 'Active';
+            } catch (err) {
+                errorMsg.textContent = 'Failed to access camera: ' + err.message;
+                connectionStatus.textContent = 'Error';
+                backendStatus.textContent = 'Error';
+                broadcastToggle.classList.remove('active');
+            }
+        }
+
+        // Connect to backend as interviewer
+        async function connectAsInterviewer() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/interviewer/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                console.log('Interviewer connected:', result);
+                showSuccessMessage('Connected to backend successfully');
+            } catch (err) {
+                console.error('Failed to connect as interviewer:', err);
+                showErrorMessage('Failed to connect to backend');
+            }
+        }
+
+        // Upload frame to backend
+        async function uploadFrame() {
+            if (!isBroadcasting || !interviewerStream) return;
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = interviewerVideo.videoWidth;
+                canvas.height = interviewerVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(interviewerVideo, 0, 0, canvas.width, canvas.height);
+                
+                canvas.toBlob(async (frameBlob) => {
+                    const formData = new FormData();
+                    formData.append('file', frameBlob, 'interviewer_frame.jpg');
+                    
+                    const response = await fetch('http://127.0.0.1:8000/interviewer/upload-frame', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        console.log('Frame uploaded successfully');
+                    }
+                }, 'image/jpeg');
+            } catch (err) {
+                console.error('Failed to upload frame:', err);
+                showErrorMessage('Failed to upload frame');
+            }
+        }
+
+        // Create a more frequent upload for live-like experience
+        async function uploadLiveFrame() {
+            if (!isBroadcasting || !interviewerStream) return;
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = interviewerVideo.videoWidth;
+                canvas.height = interviewerVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(interviewerVideo, 0, 0, canvas.width, canvas.height);
+                
+                canvas.toBlob(async (frameBlob) => {
+                    const formData = new FormData();
+                    formData.append('file', frameBlob, 'interviewer_live_frame.jpg');
+                    
+                    await fetch('http://127.0.0.1:8000/interviewer/upload-frame', {
+                        method: 'POST',
+                        body: formData
+                    });
+                }, 'image/jpeg', 0.8); // Higher quality for live feed
+            } catch (err) {
+                console.error('Failed to upload live frame:', err);
+            }
+        }
+
+        // Get active candidates
+        async function getActiveCandidates() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/candidate/sessions');
+                const candidates = await response.json();
+                
+                candidateList.innerHTML = '';
+                
+                if (Object.keys(candidates).length === 0) {
+                    candidateList.innerHTML = '<div class="candidate-item"><span>No active candidates</span></div>';
+                    return;
+                }
+                
+                Object.values(candidates).forEach(candidate => {
+                    const isOnline = new Date(candidate.last_seen) > new Date(Date.now() - 60000); // Online if seen in last minute
+                    const candidateItem = document.createElement('div');
+                    candidateItem.className = 'candidate-item';
+                    candidateItem.innerHTML = `
+                        <span>${candidate.userId}</span>
+                        <div class="candidate-status">
+                            <div class="status-indicator-small ${isOnline ? '' : 'offline'}"></div>
+                            <span>${isOnline ? 'Online' : 'Offline'}</span>
+                        </div>
+                    `;
+                    candidateList.appendChild(candidateItem);
+                });
+            } catch (err) {
+                console.error('Failed to get candidates:', err);
+                candidateList.innerHTML = '<div class="candidate-item"><span>Error loading candidates</span></div>';
+            }
+        }
+
+        // Broadcast toggle functionality
+        broadcastToggle.addEventListener('click', () => {
+            isBroadcasting = !isBroadcasting;
+            if (isBroadcasting) {
+                broadcastToggle.classList.add('active');
+                showSuccessMessage('Broadcasting enabled');
+                if (isAutoUploading) {
+                    startAutoUpload();
+                }
+            } else {
+                broadcastToggle.classList.remove('active');
+                showSuccessMessage('Broadcasting disabled');
+                stopAutoUpload();
+            }
+        });
+
+        // Auto upload toggle functionality
+        autoUploadToggle.addEventListener('click', () => {
+            isAutoUploading = !isAutoUploading;
+            if (isAutoUploading) {
+                autoUploadToggle.classList.add('active');
+                showSuccessMessage('Auto upload enabled');
+                if (isBroadcasting) {
+                    startAutoUpload();
+                }
+            } else {
+                autoUploadToggle.classList.remove('active');
+                showSuccessMessage('Auto upload disabled');
+                stopAutoUpload();
+            }
+        });
+
+        // Start auto upload
+        function startAutoUpload() {
+            if (uploadInterval) {
+                clearInterval(uploadInterval);
+            }
+            uploadInterval = setInterval(uploadFrame, 2000); // Upload every 2 seconds
+            
+            // Start live frame upload for better quality
+            if (liveUploadInterval) {
+                clearInterval(liveUploadInterval);
+            }
+            liveUploadInterval = setInterval(uploadLiveFrame, 500); // Upload every 500ms for live feel
+        }
+
+        // Stop auto upload
+        function stopAutoUpload() {
+            if (uploadInterval) {
+                clearInterval(uploadInterval);
+                uploadInterval = null;
+            }
+            if (liveUploadInterval) {
+                clearInterval(liveUploadInterval);
+                liveUploadInterval = null;
+            }
+        }
+
+        // Show success message
+        function showSuccessMessage(message) {
+            successMsg.textContent = message;
+            setTimeout(() => {
+                successMsg.textContent = '';
+            }, 3000);
+        }
+
+        // Show error message
+        function showErrorMessage(message) {
+            errorMsg.textContent = message;
+            setTimeout(() => {
+                errorMsg.textContent = '';
+            }, 3000);
+        }
+
+        // Initialize everything
+        async function initialize() {
+            await connectAsInterviewer();
+            await initializeInterviewerCamera();
+            
+            if (isBroadcasting && isAutoUploading) {
+                startAutoUpload();
+            }
+            
+            // Update candidates list periodically
+            getActiveCandidates();
+            setInterval(getActiveCandidates, 10000); // Every 10 seconds
+        }
+
+        initialize();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', async () => {
+            try {
+                await fetch('http://127.0.0.1:8000/interviewer/disconnect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            } catch (err) {
+                console.error('Failed to disconnect:', err);
+            }
+        });
+    </script>
+</body>
+</html> 

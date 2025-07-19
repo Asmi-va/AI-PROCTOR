@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Proctoring - Interviewer Live View</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            max-width: 1200px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.08);
+            padding: 30px;
+        }
+        .video-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            margin-right: 30px;
+        }
+        .logs-section {
+            flex: 2;
+        }
+        h1 {
+            text-align: center;
+            color: #007bff;
+        }
+        #candidateVideo {
+            width: 400px;
+            height: 300px;
+            background: #222;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-bottom: 20px;
+            border: 2px solid #007bff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+        .log-type {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .timestamp {
+            font-size: 0.95em;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div style="background: #007bff; color: white; padding: 10px 20px; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px;">Interviewer Live View</h1>
+        <div style="margin-top: 10px;">
+            <a href="interviewer_upload.html" style="color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 5px; margin: 0 10px;">
+                📹 Upload Your Video
+            </a>
+            <a href="interviewer.html" style="color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 5px; margin: 0 10px;">
+                📊 View Logs
+            </a>
+        </div>
+    </div>
+    <div class="container">
+        <div class="video-section">
+            <img id="candidateVideo" src="" alt="Candidate Live Video" />
+        </div>
+        <div class="logs-section">
+            <table id="logsTable">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User ID</th>
+                        <th>Type</th>
+                        <th>Event/Result</th>
+                    </tr>
+                </thead>
+                <tbody id="logsBody">
+                    <tr><td colspan="4">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        // Refresh candidate video every 2 seconds
+        function refreshCandidateVideo() {
+            const img = document.getElementById('candidateVideo');
+            // Add cache buster to avoid browser caching
+            img.src = 'http://127.0.0.1:8000/latest-frame?t=' + Date.now();
+        }
+        setInterval(refreshCandidateVideo, 2000);
+        refreshCandidateVideo();
+
+        // Fetch logs
+        async function fetchLogs() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/logs');
+                const logs = await response.json();
+                const logsBody = document.getElementById('logsBody');
+                if (!Array.isArray(logs) || logs.length === 0) {
+                    logsBody.innerHTML = '<tr><td colspan="4">No logs yet.</td></tr>';
+                    return;
+                }
+                logsBody.innerHTML = logs.map(log => {
+                    let userId = log.userId || (log.result && log.result.userId) || '-';
+                    let type = log.type || '-';
+                    let eventOrResult = '';
+                    if (type === 'tab-switch') {
+                        eventOrResult = log.event;
+                    } else if (log.result) {
+                        eventOrResult = JSON.stringify(log.result);
+                    } else {
+                        eventOrResult = '-';
+                    }
+                    return `<tr>
+                        <td class="timestamp">${log.timestamp || '-'}</td>
+                        <td>${userId}</td>
+                        <td class="log-type">${type}</td>
+                        <td>${eventOrResult}</td>
+                    </tr>`;
+                }).join('');
+            } catch (err) {
+                document.getElementById('logsBody').innerHTML = `<tr><td colspan="4">Error fetching logs: ${err.message}</td></tr>`;
+            }
+        }
+        fetchLogs();
+        setInterval(fetchLogs, 5000); // Auto-refresh every 5 seconds
+    </script>
+</body>
+</html> 

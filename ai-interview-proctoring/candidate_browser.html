@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI INTERVIEW PROCTORING - Candidate Browser</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 500;
+        }
+
+        .user-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .user-id {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            backdrop-filter: blur(5px);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ecc71;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .video-section {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+        }
+
+        .video-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .video-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .video-wrapper {
+            flex: 1;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .interviewer-video {
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .controls-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .control-group h3 {
+            color: white;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .control-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #2ecc71;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(26px);
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 80px);
+            }
+            
+            .video-section {
+                flex-direction: column;
+            }
+            
+            .controls-section {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI Interview Proctoring - Candidate Browser</h1>
+        <div class="user-info">
+            <div class="user-id" id="userId">Loading...</div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Connected</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="video-section">
+            <div class="video-container">
+                <div class="video-title">Interviewer</div>
+                <div class="video-wrapper interviewer-video" id="interviewerVideo">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Connecting to interviewer...
+                    </div>
+                </div>
+            </div>
+            
+            <div class="video-container">
+                <div class="video-title">Your Camera</div>
+                <div class="video-wrapper">
+                    <video id="candidateVideo" autoplay playsinline muted></video>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="control-group">
+                <h3>Camera & Audio</h3>
+                <div class="control-item">
+                    <span>Camera</span>
+                    <div class="toggle-switch active" id="cameraToggle"></div>
+                </div>
+                <div class="control-item">
+                    <span>Microphone</span>
+                    <div class="toggle-switch active" id="micToggle"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Connection Status</h3>
+                <div class="control-item">
+                    <span>Interviewer Feed</span>
+                    <span id="interviewerStatus">Connecting...</span>
+                </div>
+                <div class="control-item">
+                    <span>Your Camera</span>
+                    <span id="cameraStatus">Active</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Session Info</h3>
+                <div class="control-item">
+                    <span>Session Time</span>
+                    <span id="sessionTime">00:00</span>
+                </div>
+                <div class="control-item">
+                    <span>Connection Quality</span>
+                    <span id="connectionQuality">Good</span>
+                </div>
+            </div>
+
+            <div id="errorMsg" class="error-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Extract userId from query params or generate one
+        const urlParams = new URLSearchParams(window.location.search);
+        let userId = urlParams.get('userId');
+        if (!userId) {
+            userId = 'user-' + Math.random().toString(36).substr(2, 9);
+        }
+        document.getElementById('userId').textContent = userId;
+
+        // Video elements
+        const candidateVideo = document.getElementById('candidateVideo');
+        const interviewerVideo = document.getElementById('interviewerVideo');
+        const errorMsg = document.getElementById('errorMsg');
+
+        // Control elements
+        const cameraToggle = document.getElementById('cameraToggle');
+        const micToggle = document.getElementById('micToggle');
+        const interviewerStatus = document.getElementById('interviewerStatus');
+        const cameraStatus = document.getElementById('cameraStatus');
+        const sessionTime = document.getElementById('sessionTime');
+        const connectionQuality = document.getElementById('connectionQuality');
+
+        let candidateStream = null;
+        let sessionStartTime = Date.now();
+
+        // Initialize candidate camera
+        async function initializeCandidateCamera() {
+            try {
+                candidateStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                candidateVideo.srcObject = candidateStream;
+                cameraStatus.textContent = 'Active';
+            } catch (err) {
+                errorMsg.textContent = 'Failed to access camera: ' + err.message;
+                cameraStatus.textContent = 'Error';
+                cameraToggle.classList.remove('active');
+            }
+        }
+
+        // Initialize interviewer video feed
+        function initializeInterviewerVideo() {
+            // Create video element for live interviewer feed
+            const video = document.createElement('video');
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'cover';
+            video.style.borderRadius = '10px';
+            video.autoplay = true;
+            video.playsinline = true;
+            video.muted = true;
+            
+            // Try to get interviewer's live camera stream
+            async function connectToInterviewer() {
+                try {
+                    // First try to get a direct stream (if interviewer is sharing)
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: true, 
+                        audio: false 
+                    });
+                    
+                    // For demo purposes, we'll use the candidate's own camera as interviewer
+                    // In a real implementation, this would be the actual interviewer's stream
+                    video.srcObject = stream;
+                    interviewerStatus.textContent = 'Live';
+                    
+                    // Update status to show it's a live feed
+                    const statusElement = document.getElementById('interviewerStatus');
+                    if (statusElement) {
+                        statusElement.textContent = 'Live';
+                    }
+                    
+                } catch (err) {
+                    console.log('Using fallback interviewer feed');
+                    // Fallback to frame-based feed if live stream not available
+                    const img = document.createElement('img');
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '10px';
+                    
+                    function updateInterviewerVideo() {
+                        img.src = 'http://127.0.0.1:8000/interviewer/latest-frame?t=' + Date.now();
+                        interviewerStatus.textContent = 'Live';
+                    }
+                    
+                    updateInterviewerVideo();
+                    setInterval(updateInterviewerVideo, 500); // Update every 500ms for live feel
+                    
+                    interviewerVideo.innerHTML = '';
+                    interviewerVideo.appendChild(img);
+                }
+            }
+            
+            interviewerVideo.innerHTML = '';
+            interviewerVideo.appendChild(video);
+            
+            connectToInterviewer();
+        }
+
+        // Camera toggle functionality
+        cameraToggle.addEventListener('click', async () => {
+            if (cameraToggle.classList.contains('active')) {
+                if (candidateStream) {
+                    candidateStream.getVideoTracks().forEach(track => track.stop());
+                }
+                candidateVideo.srcObject = null;
+                cameraToggle.classList.remove('active');
+                cameraStatus.textContent = 'Disabled';
+                await updateBackendStatus(false, micToggle.classList.contains('active'));
+            } else {
+                await initializeCandidateCamera();
+                cameraToggle.classList.add('active');
+                await updateBackendStatus(true, micToggle.classList.contains('active'));
+            }
+        });
+
+        // Microphone toggle functionality
+        micToggle.addEventListener('click', async () => {
+            if (micToggle.classList.contains('active')) {
+                if (candidateStream) {
+                    candidateStream.getAudioTracks().forEach(track => track.stop());
+                }
+                micToggle.classList.remove('active');
+                await updateBackendStatus(cameraToggle.classList.contains('active'), false);
+            } else {
+                await initializeCandidateCamera();
+                micToggle.classList.add('active');
+                await updateBackendStatus(cameraToggle.classList.contains('active'), true);
+            }
+        });
+
+        // Session timer
+        function updateSessionTime() {
+            const elapsed = Date.now() - sessionStartTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            sessionTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        setInterval(updateSessionTime, 1000);
+
+        // Connection quality monitoring
+        function updateConnectionQuality() {
+            if (candidateStream) {
+                const videoTrack = candidateStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    const settings = videoTrack.getSettings();
+                    if (settings.width >= 1280) {
+                        connectionQuality.textContent = 'Excellent';
+                    } else if (settings.width >= 640) {
+                        connectionQuality.textContent = 'Good';
+                    } else {
+                        connectionQuality.textContent = 'Fair';
+                    }
+                }
+            }
+        }
+        setInterval(updateConnectionQuality, 5000);
+
+        // Tab switch detection
+        // document.addEventListener('visibilitychange', function() {
+        //     const event = document.hidden ? 'tab_hidden' : 'tab_visible';
+        //     fetch('http://127.0.0.1:8000/tab-switch', {
+        //         method: 'POST',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({
+        //             userId: userId,
+        //             event: event
+        //         })
+        //     });
+        // });
+
+        // Auto-upload candidate frame for interviewer view
+        async function uploadCandidateFrame() {
+            if (candidateVideo.readyState === candidateVideo.HAVE_ENOUGH_DATA) {
+                const canvas = document.createElement('canvas');
+                canvas.width = candidateVideo.videoWidth;
+                canvas.height = candidateVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(candidateVideo, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(async (frameBlob) => {
+                    const formData = new FormData();
+                    formData.append('file', frameBlob, 'frame.jpg');
+                    try {
+                        await fetch('http://127.0.0.1:8000/upload-frame', {
+                            method: 'POST',
+                            body: formData
+                        });
+                    } catch (err) {
+                        console.error('Failed to upload frame:', err);
+                    }
+                }, 'image/jpeg');
+            }
+            setTimeout(uploadCandidateFrame, 5000);
+        }
+
+        // Connect to backend session management
+        async function connectToBackend() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/candidate/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: userId,
+                        status: 'active',
+                        camera_enabled: true,
+                        microphone_enabled: true
+                    })
+                });
+                console.log('Connected to backend:', await response.json());
+            } catch (err) {
+                console.error('Failed to connect to backend:', err);
+            }
+        }
+
+        // Update status to backend
+        async function updateBackendStatus(cameraEnabled, micEnabled) {
+            try {
+                await fetch('http://127.0.0.1:8000/candidate/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: userId,
+                        camera_enabled: cameraEnabled,
+                        microphone_enabled: micEnabled
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to update status:', err);
+            }
+        }
+
+        // Send heartbeat to backend
+        async function sendHeartbeat() {
+            try {
+                await fetch(`http://127.0.0.1:8000/candidate/heartbeat?userId=${encodeURIComponent(userId)}`, {
+                    method: 'POST'
+                });
+            } catch (err) {
+                console.error('Failed to send heartbeat:', err);
+            }
+        }
+
+        // Get comprehensive status from backend
+        async function getBrowserStatus() {
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/candidate/browser-status?userId=${encodeURIComponent(userId)}`);
+                const status = await response.json();
+                
+                // Update interviewer status
+                if (status.interviewer && status.interviewer.is_online) {
+                    interviewerStatus.textContent = 'Online';
+                } else {
+                    interviewerStatus.textContent = 'Offline';
+                }
+                
+                return status;
+            } catch (err) {
+                console.error('Failed to get status:', err);
+                return null;
+            }
+        }
+
+        // Initialize everything
+        async function initialize() {
+            await connectToBackend();
+            await initializeCandidateCamera();
+            initializeInterviewerVideo();
+            candidateVideo.addEventListener('loadeddata', uploadCandidateFrame);
+            
+            // Start heartbeat
+            setInterval(sendHeartbeat, 30000); // Every 30 seconds
+            
+            // Update status periodically
+            setInterval(getBrowserStatus, 10000); // Every 10 seconds
+        }
+
+        initialize();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', async () => {
+            try {
+                await fetch('http://127.0.0.1:8000/candidate/disconnect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId })
+                });
+            } catch (err) {
+                console.error('Failed to disconnect:', err);
+            }
+        });
+    </script>
+</body>
+</html> 
